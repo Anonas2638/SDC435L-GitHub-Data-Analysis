@@ -1,13 +1,14 @@
 
 import redis
 
-from import_repositories import import_repositories
-from redis_crud import crud_menu
-from repository_popularity import (
+from redis_db.import_repositories import import_repositories
+from redis_db.redis_crud import crud_menu
+from redis_db.repository_popularity import (
     get_repositories_from_redis,
     show_popular_repositories
 )
-from owner_analysis import owner_analysis
+from redis_db.owner_analysis import owner_analysis
+from redis_db.repository_statistics import repository_statistics
 
 
 def main():
@@ -37,7 +38,8 @@ def main():
         print("2. Manage repositories (CRUD)")
         print("3. Repository popularity analysis")
         print("4. Repository owner analysis")
-        print("5. Exit")
+        print("5. Repository watch count statistics")
+        print("6. Exit")
 
         choice = input("\nEnter your choice: ").strip()
 
@@ -60,6 +62,9 @@ def main():
                 owner_analysis()
 
             elif choice == "5":
+                repository_statistics()
+
+            elif choice == "6":
                 print("Thank you for using GitHub Data Analysis!")
                 break
 
