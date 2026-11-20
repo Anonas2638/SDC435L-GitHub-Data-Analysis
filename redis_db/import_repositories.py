@@ -14,7 +14,7 @@ def import_repositories():
     connection.ping()
     print("Connected to Redis successfully!")
 
-    file_path = Path(__file__).parent / "Sample_Repos.json"
+    file_path = Path(__file__).resolve().parent.parent / "Sample_Repos.json"
 
     if not file_path.exists():
         print("Error: Sample_Repos.json was not found.")
