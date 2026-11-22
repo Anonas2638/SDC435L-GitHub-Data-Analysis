@@ -219,3 +219,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 Sample_Repos.json
+
+# macOS metadata
+.DS_Store
+
+# Assignment submission archives
+SDC435L_Week1_Final_Application.zip
