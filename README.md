@@ -321,12 +321,14 @@ Assigned the Week 2 repository name length and watch count distribution analyses
 | --- | --- |
 | Week 1 Redis implementation, testing, and PR merges | Complete |
 | Week 1 final submission | Submitted |
-| Week 2 MongoDB connection, import, CRUD, and three analyses | Complete and locally tested |
-| Week 2 central application integration | Complete and locally tested |
-| Week 2 README and documentation review | In progress until committed |
-| Week 2 feature branch push and pull request | Pending |
-| Week 2 final ZIP and progress report | Pending |
-| Week 2 final submission | Pending |
+| Week 2 MongoDB connection, import, CRUD, and three analyses | Complete and tested |
+| Week 2 central application integration | Complete and tested |
+| Week 2 README and documentation review | Complete and committed |
+| Week 2 feature branch push | Complete |
+| Week 2 pull request #3 | Merged into `main` |
+| Week 2 final application ZIP | Completed |
+| Week 2 progress report | Updated |
+| Week 2 final submission | Completed |
 | Week 3 Cassandra | Not started |
 | Week 4 Neo4j | Not started |
 | Week 5 SQLite | Not started |
