@@ -2,434 +2,341 @@
 
 ## Project Overview
 
-This project is part of the SDC435L NoSQL Databases Lab course at ECPI
-University. The goal is to develop a Python application that analyzes GitHub
-Archive data using five database technologies over five weeks: Redis, MongoDB,
-Cassandra, Neo4j, and SQLite.
+This ECPI University SDC435L group project develops a modular Python command-line application to explore GitHub Archive repository data using five database technologies over five weeks: Redis (key-value), MongoDB (document), Cassandra (wide-column), Neo4j (graph), and SQLite (relational).
 
-Each week, the application will be expanded to demonstrate database
-integration, data management, and analysis features.
+**Week 1 (Redis)** and **Week 2 (MongoDB)** functionality are implemented and tested. The application offers one entry point, `python main.py`, with separate menus for each database. Cassandra, Neo4j, and SQLite appear as future-week placeholders and are **not implemented yet**.
 
-## Week 1 – Redis Integration
+## Week 1: Redis Integration
 
-The first week focuses on connecting Python to Redis, importing GitHub Archive
-data, performing CRUD operations, and analyzing repository information.
+Redis stores repository records as JSON strings under keys formatted `github:repo:owner/repository`.
 
-### Features Implemented
+Implemented features:
 
-#### 1. Redis Database Connection
+1. **Connection:** Connects to a local Redis server and verifies connectivity with `PING`.
+2. **Dataset import:** `redis_db/import_repositories.py` reads line-delimited records from `Sample_Repos.json` and imports up to 1,000 repository records per run.
+3. **CRUD:** `redis_db/redis_crud.py` provides interactive Create, Read, Update, and Delete operations, with duplicate prevention, validation, and deletion confirmation.
+4. **Popularity analysis:** `redis_db/repository_popularity.py` displays the ten repositories with the highest watch counts.
+5. **Owner analysis:** `redis_db/owner_analysis.py` counts repositories by owner and displays the ten most frequent owners.
+6. **Watch count statistics:** `redis_db/repository_statistics.py` calculates the total, mean, median, minimum, and maximum watch counts.
+7. **Menu:** `redis_db/redis_menu.py` integrates importing, CRUD, and the three analyses into the Redis submenu.
 
-- Established a connection between Python and Redis.
-- Verified the connection using the Redis PING command.
+The initial Redis popularity analysis was also tested against 277,771 records in the original development environment. The integrated application was tested using a reproducible 1,000-record sample.
 
-#### 2. GitHub Archive Data Import
+## Week 2: MongoDB Integration
 
-- Created `redis_db/import_repositories.py` to read repository information
-  from `Sample_Repos.json`.
-- Stores repository records as JSON strings using keys beginning with `github:repo:`.
-- Successfully imported and tested data from the provided GitHub Archive dataset.
-- Limits imports to 1,000 records per execution in the current implementation.
+MongoDB stores repository records as BSON documents in database `GitHubArchive`, collection `Repositories`, using `mongodb://localhost:27017/`.
 
-#### 3. Repository Popularity Analysis
+### Connection and import
 
-- Created `redis_db/repository_popularity.py`.
-- Retrieves stored repository information from Redis.
-- Sorts repositories by their `watch_count` values.
-- Displays the top 10 most popular repositories.
-- Previously tested using 277,771 repository records stored in Redis.
+- `mongodb_db/mongo_connection.py` provides reusable PyMongo connection and collection functions, with a connectivity check, timeout, and error handling.
+- `mongodb_db/mongo_import.py` reads `Sample_Repos.json` from the project root, validates repository names and nonnegative watch counts, and converts watch counts to integers.
+- The importer uses `update_one(..., {"$setOnInsert": ...}, upsert=True)` to preserve existing documents and prevent repeated imports from creating duplicates.
+- It creates a unique ascending index on `repo_name` and a descending index on `watch_count`.
+- It reports newly imported, already existing, and invalid records. A repeated 1,000-record import produced 0 new records, 1,000 existing records, and 0 invalid records.
 
-#### 4. Repository Management (CRUD)
+### CRUD operations
 
-- Created `redis_db/redis_crud.py`.
-- Implements Create, Read, Update, and Delete operations.
-- Uses Redis SET with the NX option to prevent duplicate records.
-- Uses Redis SET with the XX option to update existing records.
-- Allows users to manage repositories through an interactive menu.
-- Includes input validation, error handling, and deletion confirmation.
-- Maintains consistency with the existing JSON data structure.
+`mongodb_db/mongo_crud.py` provides an interactive menu using `insert_one()`, `find_one()`, `update_one()`, and `delete_one()`. It validates input, rejects duplicate names and negative watch counts, requests confirmation before deletion, and handles missing repositories and invalid selections.
 
-#### 5. Repository Owner Analysis
+### Three MongoDB analysis features
 
-- Created `redis_db/owner_analysis.py`.
-- Retrieves repository records using Redis SCAN.
-- Extracts repository owners from the `repo_name` field.
-- Uses Python's Counter class to aggregate repository counts.
-- Displays the top 10 owners by the number of repositories in the imported dataset.
+1. **Top ten repositories by watch count:** `mongodb_db/mongo_repository_analysis.py`. Originally developed by Anosha Naseri and tested with 400,000 records. Refactored by Sherika Fayson to use the shared connection, sort and limit existing collection data, and avoid destructive deletion or reimporting. Retested successfully with 1,000 documents.
+2. **Longest and shortest repository names:** `mongodb_db/mongo_name_analysis.py`. Uses MongoDB aggregation with `$strLenCP` and `$facet` to display the five longest and five shortest full repository names. Implemented and tested successfully.
+3. **Watch count distribution:** `mongodb_db/mongo_watch_distribution.py`. Uses `$bucket` aggregation to count repositories across watch count ranges and display percentages and text bars. Implemented and tested successfully.
 
-#### 6. Integrated Application
+`mongodb_db/mongo_menu.py` integrates importing, CRUD, and all three MongoDB analyses.
 
-- Created `main.py` as the application's entry point.
-- Integrates dataset importing, CRUD operations, repository popularity
-  analysis, repository owner analysis, and watch count statistics.
-- Provides an interactive command-line interface for accessing application features.
-- Handles invalid menu selections and Redis connection errors.
-
-#### 7. Repository Watch Count Statistics
-
-- Created `redis_db/repository_statistics.py`.
-- Reuses existing Redis repository retrieval functionality.
-- Converts watch counts to integers and skips invalid values.
-- Calculates total, average, median, minimum, and maximum watch counts.
-- Tested with 1,000 records and integrated into the main menu.
-
-## Technologies and Dependencies
-
-- Python 3 (tested with Python 3.13.15)
-- Redis database server
-- Redis Python library (8.1.0)
-- Ubuntu Linux / ECPI VCASTLE
-- macOS
-- GitHub for version control
-- GitHub Archive dataset
-
-## Project Files
-
-| File | Description |
-| --- | --- |
-| `main.py` | Main application and navigation menu |
-| `redis_db/__init__.py` | Identifies the Redis Python package |
-| `redis_db/import_repositories.py` | Imports GitHub Archive data into Redis |
-| `redis_db/repository_popularity.py` | Ranks repositories by watch count |
-| `redis_db/redis_crud.py` | Implements repository CRUD operations |
-| `redis_db/owner_analysis.py` | Ranks repository owners by repository count |
-| `redis_db/repository_statistics.py` | Calculates watch count statistics |
-| `requirements.txt` | Python package dependencies |
-| `Sample_Repos.json` | Source dataset provided through Canvas |
-| `.gitignore` | Excludes local datasets and environment files |
-| `README.md` | Project documentation |
-
-### Directory Structure
+## Project Structure
 
 ```text
 SDC435L-GitHub-Data-Analysis/
+├── main.py
 ├── redis_db/
 │   ├── __init__.py
 │   ├── import_repositories.py
 │   ├── redis_crud.py
+│   ├── redis_menu.py
 │   ├── repository_popularity.py
 │   ├── owner_analysis.py
 │   └── repository_statistics.py
-├── main.py
-├── mongo_repository_analysis.py
+├── mongodb_db/
+│   ├── __init__.py
+│   ├── mongo_connection.py
+│   ├── mongo_import.py
+│   ├── mongo_crud.py
+│   ├── mongo_menu.py
+│   ├── mongo_repository_analysis.py
+│   ├── mongo_name_analysis.py
+│   └── mongo_watch_distribution.py
 ├── requirements.txt
-├── Sample_Repos.json (local dataset)
 ├── README.md
-└── .gitignore
+├── .gitignore
+└── Sample_Repos.json    # Download from Canvas; not tracked by Git
 ```
 
-The Redis modules are organized into a Python package. The existing Week 2
-MongoDB module remains in the project root.
+## Requirements
 
-## Redis Data Model
+- Python 3 (tested locally with Python 3.13)
+- Redis server, typically on `localhost:6379`
+- MongoDB Community Server, typically on `localhost:27017`
+- GitHub Archive `Sample_Repos.json` dataset provided through the course
+- Python packages from `requirements.txt`: `redis==8.1.0` and `pymongo==4.20.1`
+- Git and GitHub for collaboration
 
-Repository records are stored using the following key format:
+The application was developed and tested on macOS; some original feature development was performed in ECPI VCASTLE environments.
 
-```text
-github:repo:owner/repository
-```
+## Setup and Run
 
-Example JSON value:
-
-```json
-{
-    "repo_name": "FreeCodeCamp/FreeCodeCamp",
-    "watch_count": "90457"
-}
-```
-
-Repository names serve as unique identifiers. Watch counts are stored as
-strings to maintain consistency with the original dataset.
-
-## Setup Instructions
-
-### 1. Clone the Repository
+### 1. Clone the project and install dependencies
 
 ```bash
 git clone https://github.com/Anonas2638/SDC435L-GitHub-Data-Analysis.git
 cd SDC435L-GitHub-Data-Analysis
-```
-
-### 2. Create a Virtual Environment
-
-```bash
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
 python -m pip install -r requirements.txt
 ```
 
-### 4. Install and Start Redis
+On Windows PowerShell, activate the virtual environment with `.venv\Scripts\Activate.ps1` instead of `source .venv/bin/activate`.
 
-Ensure Redis is installed and running locally on port 6379.
+**Note:** Until the Week 2 pull request is merged, the completed MongoDB implementation is available on the `feature/mongodb-crud` branch rather than `main`.
 
-For Ubuntu:
+### 2. Start the database servers
 
-```bash
-sudo apt install redis-server
-sudo systemctl start redis-server
-```
-
-For macOS using Homebrew:
+Install and start Redis and MongoDB Community Server for your operating system. On macOS with Homebrew, for example:
 
 ```bash
 brew install redis
 brew services start redis
+brew tap mongodb/brew
+brew install mongodb-community
+brew services start mongodb-community
 ```
 
-Verify the Redis connection:
+For other platforms, follow the respective official Redis and MongoDB installation instructions. Verify the running services:
 
 ```bash
 redis-cli ping
+mongosh --eval 'db.adminCommand({ ping: 1 })'
 ```
 
-Expected output:
+Redis should return `PONG`, and MongoDB should report `ok: 1`.
 
-```text
-PONG
-```
+### 3. Add the dataset
 
-### 5. Prepare the Dataset
+Download and extract the GitHub Archive dataset from the SDC435L Canvas course. Place `Sample_Repos.json` beside `main.py` in the project root. The dataset is not tracked in GitHub and must be obtained separately.
 
-- Download the GitHub Archive dataset from the SDC435L course in Canvas.
-- Extract the downloaded ZIP file.
-- Place `Sample_Repos.json` in the project root beside `main.py`, not inside
-  `redis_db/`.
-
-The dataset is excluded from GitHub and must be downloaded separately.
-
-### 6. Run the Application
+### 4. Launch the application
 
 ```bash
 python main.py
 ```
 
-## Application Menu
+The main menu is:
 
 ```text
-=============================================
-         GITHUB DATA ANALYSIS
-       SDC435L - Redis Integration
-=============================================
-1. Import repository data
-2. Manage repositories (CRUD)
-3. Repository popularity analysis
-4. Repository owner analysis
-5. Repository watch count statistics
+GITHUB DATA ANALYSIS
+SDC435L - Group Project
+1. Redis
+2. MongoDB
+3. Cassandra (Coming Soon)
+4. Neo4j (Coming Soon)
+5. SQLite (Coming Soon)
 6. Exit
 ```
 
-Select option 1 to import repository records if the database has not already
-been populated.
-
-## Repository Management Menu
+Choose `1` for Redis or `2` for MongoDB. Each database submenu provides:
 
 ```text
-1. Create repository
-2. Read repository
-3. Update repository
-4. Delete repository
-5. Return to main menu
+1. Import repository data
+2. Manage repositories (CRUD)
+3. Repository popularity analysis
+4. Repository owner analysis       [Redis]
+   Longest and shortest names      [MongoDB]
+5. Repository watch count statistics [Redis]
+   Repository watch count distribution [MongoDB]
+6. Return to main menu
 ```
 
-## Running Individual Modules
+Select option `1` in a database submenu before running analyses if its database is empty. The CRUD submenu allows users to create, read, update, and delete records and then return to the database menu.
 
-Run the following commands from the project root using Python's `-m` flag to
-execute the packaged modules independently.
+### Run individual modules
 
-Import repository data:
+Run these commands from the project root:
 
 ```bash
+# Redis
 python -m redis_db.import_repositories
-```
-
-Run repository popularity analysis:
-
-```bash
-python -m redis_db.repository_popularity
-```
-
-Run repository management:
-
-```bash
 python -m redis_db.redis_crud
-```
-
-Run repository owner analysis:
-
-```bash
+python -m redis_db.repository_popularity
 python -m redis_db.owner_analysis
-```
-
-Run repository watch count statistics:
-
-```bash
 python -m redis_db.repository_statistics
+
+# MongoDB
+python -m mongodb_db.mongo_import
+python -m mongodb_db.mongo_crud
+python -m mongodb_db.mongo_repository_analysis
+python -m mongodb_db.mongo_name_analysis
+python -m mongodb_db.mongo_watch_distribution
 ```
 
-## Testing
+## Database Models
 
-The application was tested using a local Redis server. CRUD operations were
-verified before package restructuring. Dataset import, all three analyses,
-invalid menu handling, and application exit were verified again afterward.
+| Attribute | Redis | MongoDB |
+| --- | --- | --- |
+| Database type | Key-value | Document |
+| Record representation | JSON string | BSON document |
+| Repository identifier | `github:repo:<repo_name>` key | Unique `repo_name` field plus `_id` |
+| `watch_count` representation | String from dataset | Integer |
+| Analysis approach | Python iteration and statistics | MongoDB queries and aggregation |
+
+Example dataset record:
+
+```json
+{"repo_name": "FreeCodeCamp/FreeCodeCamp", "watch_count": "90457"}
+```
+
+MongoDB stores the same repository with `watch_count: 90457` as an integer and an automatically generated `_id`. Indexes: `_id_`, unique `repo_name_1`, and descending `watch_count_-1`.
+
+## Testing and Verification
+
+### Week 1: Redis
+
+Connection, import of 1,000 records, CRUD operations, duplicate handling, deletion verification, three analyses, menu navigation, invalid selections, and exit were tested successfully. CRUD was tested before the Redis package restructuring; dataset import and all three analyses were retested after restructuring and again through the integrated menu.
+
+### Week 2: MongoDB
 
 | Test | Result |
 | --- | --- |
-| Python-to-Redis connection | Passed |
-| Dataset import of 1,000 records | Passed |
-| Create repository | Passed |
-| Read repository | Passed |
-| Update repository | Passed |
-| Delete repository | Passed |
-| Verify repository deletion | Passed |
-| Repository popularity analysis | Passed |
-| Repository owner analysis | Passed |
-| Repository watch count statistics | Passed |
-| Statistical analysis menu integration | Passed |
-| Repeated analysis execution | Passed |
-| Main menu navigation | Passed |
-| CRUD submenu navigation | Passed |
-| Invalid menu selection | Passed |
-| Application exit | Passed |
-| Redis package imports and independent module execution | Passed |
-| Dataset import after package relocation | Passed |
-| All three analyses after package relocation | Passed |
+| Local MongoDB connection and ping | Passed |
+| Initial import: 1,000 new documents | Passed |
+| Repeat import: 0 new, 1,000 existing | Passed |
+| Document schema and integer watch counts | Passed |
+| Unique repository and descending watch count indexes | Passed |
+| Create, read, update, delete, and verify deletion | Passed |
+| Duplicate creation rejection | Passed |
+| Invalid menu selection and CRUD exit | Passed |
+| Popularity analysis, with existing documents preserved | Passed |
+| Longest and shortest repository name analysis | Passed |
+| Watch count distribution analysis | Passed |
+| Redis and MongoDB navigation through `main.py` | Passed |
+| Redis analyses after central menu integration | Passed |
+| Future database placeholders and application exit | Passed |
 
-### Sample Owner Analysis Results
+These results describe the tests actually performed, not automated test-suite coverage. The final 1,000-document count was verified after the MongoDB CRUD and analysis tests.
 
-The following results were obtained from the imported sample:
+## Sample Analysis Results
 
-| Rank | Owner | Repository Count |
-| --- | --- | --- |
+### Redis owner analysis (1,000 records)
+
+| Rank | Owner | Repository count |
+| ---: | --- | ---: |
 | 1 | google | 22 |
 | 2 | facebook | 19 |
 | 3 | Ramotion | 8 |
 | 4 | gaearon | 7 |
 | 5 | reactjs | 7 |
 
-Results may vary depending on the number of repository records imported.
+### Redis watch count statistics (1,000 records)
 
-### Sample Watch Count Statistics
-
-| Metric | Result |
+| Metric | Value |
 | --- | ---: |
 | Total repositories | 1,000 |
-| Repositories analyzed | 1,000 |
 | Total watches | 2,383,125 |
 | Average watches | 2,383.12 |
-| Median watches | 1,693.00 |
+| Median watches | 1,693 |
 | Minimum watches | 1,083 |
 | Maximum watches | 90,457 |
 
-Results reflect the imported sample.
+### MongoDB top ten repositories (1,000 documents)
+
+| Rank | Repository | Watch count |
+| ---: | --- | ---: |
+| 1 | FreeCodeCamp/FreeCodeCamp | 90,457 |
+| 2 | firehol/netdata | 13,208 |
+| 3 | joshbuchea/HEAD | 13,125 |
+| 4 | braydie/HowToBeAProgrammer | 12,019 |
+| 5 | sindresorhus/awesome | 11,063 |
+| 6 | tensorflow/tensorflow | 10,728 |
+| 7 | facebook/react | 10,458 |
+| 8 | ParsePlatform/parse-server | 10,339 |
+| 9 | loverajoel/jstips | 9,585 |
+| 10 | facebook/react-native | 9,437 |
+
+### MongoDB repository name lengths (1,000 documents)
+
+**Five longest:**
+
+| Repository | Characters |
+| --- | ---: |
+| MarshallOfSound/Google-Play-Music-Desktop-Player-UNOFFICIAL- | 60 |
+| numbbbbb/the-swift-programming-language-in-chinese | 50 |
+| SamyPesse/How-to-Make-a-Computer-Operating-System | 49 |
+| ReactjsProgram/react-fundamentals-curriculum | 44 |
+| h5bp/Front-end-Developer-Interview-Questions | 44 |
+
+**Five shortest:**
+
+| Repository | Characters |
+| --- | ---: |
+| tj/co | 5 |
+| v8/v8 | 5 |
+| wg/wrk | 6 |
+| git/git | 7 |
+| npm/npm | 7 |
+
+### MongoDB watch count distribution (1,000 documents)
+
+| Watch count range | Repositories | Percentage |
+| --- | ---: | ---: |
+| 0–999 | 0 | 0.00% |
+| 1,000–2,499 | 711 | 71.10% |
+| 2,500–4,999 | 224 | 22.40% |
+| 5,000–9,999 | 57 | 5.70% |
+| 10,000+ | 8 | 0.80% |
+
+Sample results depend on the imported dataset.
 
 ## Team Contributions
 
 ### Anosha Naseri
 
-- GitHub repository creation and configuration.
-- Python and Redis database integration.
-- GitHub Archive dataset import.
-- Repository popularity analysis.
-- Initial README documentation.
-- Initial Week 1 progress report.
+**Week 1:** Created and configured the group GitHub repository, invited collaborators and instructor, implemented the initial Redis connection and importer, developed repository popularity analysis, and prepared initial README and progress report documentation.
+
+**Week 2:** Developed the original MongoDB repository popularity analysis, tested its initial standalone version with 400,000 records, uploaded the initial feature, and updated the group's README and progress report.
 
 ### Sherika Fayson
 
-- Redis CRUD operations.
-- Interactive repository management menu.
-- Repository owner analysis.
-- Repository watch count statistical analysis.
-- Third analysis feature integration and testing.
-- Main application integration.
-- Python dependency management.
-- CRUD and application integration testing.
-- Redis package restructuring and post-refactoring verification.
-- README documentation updates.
+**Week 1:** Implemented Redis CRUD and interactive management, owner analysis, watch count statistics, integration, package restructuring, testing, documentation updates, and pull requests #1 and #2 (both merged).
 
-## Week 1 Development Status
+**Week 2:** Set up local MongoDB, implemented reusable connection, schema and indexes, non-destructive importer, CRUD and validation, refactored Anosha's popularity analysis for shared integration, developed repository name length and watch count distribution analyses, implemented MongoDB menu, extracted the Redis submenu, integrated both into the main application, and tested all six analysis features and database navigation.
 
-### Completed
+### Omari Johnson
 
-- [x] GitHub repository created.
-- [x] Instructor invited to the repository.
-- [x] Python and Redis connection tested.
-- [x] GitHub Archive repository data imported.
-- [x] Repository popularity analysis implemented and tested.
-- [x] CRUD operations implemented and tested.
-- [x] Interactive repository management menu implemented.
-- [x] Repository owner analysis implemented and tested.
-- [x] Existing features integrated into a single application.
-- [x] Individual and integration testing completed.
-- [x] Dependencies and documentation updated.
-- [x] Third required data analysis feature implemented and tested.
-- [x] Third analysis feature integrated into the main application.
-- [x] Local functionality and integration testing completed.
-- [x] Redis modules reorganized into a Python package.
-- [x] Dataset path and package imports updated and verified.
+Assigned the Week 2 repository name length and watch count distribution analyses. Contributions have not been confirmed. To meet the requirements, Sherika implemented and tested both features.
 
-### Remaining Group Requirements
+## Development Status
 
-- [ ] Final group verification and merge of the completed Week 1 changes.
-- [ ] Consolidate the Week 1 progress report.
-- [ ] Prepare the final application ZIP file.
-- [ ] Complete the final Week 1 group submission.
+| Milestone | Status |
+| --- | --- |
+| Week 1 Redis implementation, testing, and PR merges | Complete |
+| Week 1 final submission | Submitted |
+| Week 2 MongoDB connection, import, CRUD, and three analyses | Complete and locally tested |
+| Week 2 central application integration | Complete and locally tested |
+| Week 2 README and documentation review | In progress until committed |
+| Week 2 feature branch push and pull request | Pending |
+| Week 2 final ZIP and progress report | Pending |
+| Week 2 final submission | Pending |
+| Week 3 Cassandra | Not started |
+| Week 4 Neo4j | Not started |
+| Week 5 SQLite | Not started |
 
 ## Future Development
 
-| Week | Database | Database Model |
-| --- | --- | --- |
-| 1 | Redis | Key-value |
-| 2 | MongoDB | Document |
-| 3 | Cassandra | Wide-column |
-| 4 | Neo4j | Graph |
-| 5 | SQLite | Relational |
-
-The goal is to create one Python application that demonstrates different
-database models and their capabilities for analyzing GitHub Archive data.
+Week 3 will add Cassandra integration while preserving the modular Python architecture. The later weeks will add Neo4j and SQLite. Each new database implementation will require connectivity, data import, CRUD functionality, three analysis features, integration testing, and documentation updates.
 
 ## Course Information
 
-**Course:** SDC435L – NoSQL Databases Lab
-
-**Project:** GitHub Data Analysis
-
-**Institution:** ECPI University
-
-## Week 2 – MongoDB Repository Analysis
-
-### New Feature
-
-- `mongo_repository_analysis.py` imports GitHub Archive repository records
-  into MongoDB and displays the top 10 repositories ranked by watch count.
-- Successfully tested with 400,000 repository records.
-- Converts `watch_count` values from strings to integers for accurate sorting.
-
-### Dependencies
-
-- Python 3
-- MongoDB Community Server
-- PyMongo (`pip install pymongo`)
-
-### Technology Requirements
-
-- Windows 11 or compatible operating system
-- Local MongoDB server running on port 27017
-- GitHubArchive-Dataset, including `Sample_Repos.json`
-
-### How to Run
-
-1. Install Python 3, MongoDB, and PyMongo.
-2. Extract the GitHub Archive dataset.
-3. Update the `file_path` variable in `mongo_repository_analysis.py` to match
-   the location of `Sample_Repos.json`.
-4. Start MongoDB.
-5. Run `python mongo_repository_analysis.py`.
-
-### Current Status
-
-The repository watch count analysis has been tested successfully. Group
-integration and additional CRUD and analysis features are pending.
+- **Course:** SDC435L – NoSQL Databases Lab
+- **Institution:** ECPI University
+- **Repository:** https://github.com/Anonas2638/SDC435L-GitHub-Data-Analysis
