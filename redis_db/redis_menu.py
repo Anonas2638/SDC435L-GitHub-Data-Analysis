@@ -13,6 +13,7 @@ from redis_db.repository_popularity import (
 )
 from redis_db.owner_analysis import owner_analysis
 from redis_db.repository_statistics import repository_statistics
+from redis_db.repo_name_length_analysis import repository_name_length_analysis
 
 
 def redis_menu():
@@ -43,7 +44,9 @@ def redis_menu():
         print("3. Repository popularity analysis")
         print("4. Repository owner analysis")
         print("5. Repository watch count statistics")
-        print("6. Return to main menu")
+        print("6. Repository name-length  analysis")
+        print("7. Return to main menu")
+        
 
         choice = input("\nSelect an option: ").strip()
 
@@ -69,7 +72,10 @@ def redis_menu():
                 repository_statistics()
 
             elif choice == "6":
+                repository_name_length_analysis(connection)
+            elif choice == "7":
                 return
+
 
             else:
                 print("Invalid selection. Please try again.")
