@@ -342,3 +342,79 @@ Week 3 will add Cassandra integration while preserving the modular Python archit
 - **Course:** SDC435L – NoSQL Databases Lab
 - **Institution:** ECPI University
 - **Repository:** https://github.com/Anonas2638/SDC435L-GitHub-Data-Analysis
+
+## Week 3 – Cassandra Integration
+
+### Technology Requirements
+- Ubuntu Linux (ECPI VCASTLE)
+- Python 3.8.10
+- Apache Cassandra 4.0.5
+- Cassandra Python Driver 3.29.3
+- Git
+
+### Database Configuration
+- Host: 127.0.0.1
+- Port: 9042
+- Keyspace: github_archive
+- Table: repositories
+- Primary Key: repo_name (TEXT)
+- Watch Count: watch_count (INT)
+- Replication Factor: 1
+- Consistency Level: ONE
+
+### Implemented Features
+- Cassandra database connection and configuration.
+- JSON dataset import of 1,000 GitHub repository records.
+- Interactive Create, Read, Update, and Delete operations.
+- Top 10 repositories ranked by watch count.
+- Longest and shortest repository name analysis.
+- Average repository name length calculation.
+- Integration with the main application menu.
+
+### Installation and Execution
+
+Install the required Python dependencies:
+
+    python3 -m pip install --user -r requirements.txt
+
+Verify Cassandra is running:
+
+    nodetool status
+
+Ensure the github_archive keyspace and repositories
+table exist using the database configuration above.
+
+Place Sample_Repos.json in the project root directory.
+
+Import the dataset:
+
+    python3 -m cassandra_db.cassandra_import
+
+Run the application:
+
+    python3 main.py
+
+Select option 3 to access Cassandra.
+
+### Testing Results
+- Cassandra connection: Passed
+- JSON data import: Passed
+- All four CRUD tests: Passed
+- Repository popularity analysis: Passed
+- Repository name analysis: Passed
+- Main menu integration: Passed
+
+### Team Contributions
+- Sherika Fayson: Cassandra setup, connection,
+  JSON importer, CRUD operations, and management menu.
+- Anosha Naseri: VCASTLE configuration, integration
+  testing, repository popularity analysis, repository
+  name analysis, menu integration, and documentation.
+- Omari Johnson: Watch count distribution analysis
+  (pending integration).
+
+### Future Plans
+- Integrate the third Cassandra analysis feature.
+- Complete final integration testing.
+- Confirm dependency compatibility across environments.
+- Begin Neo4j integration in Week 4.
