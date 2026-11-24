@@ -1,7 +1,8 @@
 
-"""Interactive Cassandra repository management menu."""
+"""Interactive Cassandra repository management and analysis menu."""
 
 from cassandra_db.cassandra_connection import get_cassandra_connection
+
 from cassandra_db.cassandra_crud import (
     create_repository,
     read_repository,
@@ -9,6 +10,11 @@ from cassandra_db.cassandra_crud import (
     delete_repository,
 )
 
+# Week 3 analysis features - Anosha Naseri
+from cassandra_db.cassandra_analysis import (
+    top_repositories,
+    repository_name_analysis,
+)
 
 def get_watch_count():
     """Prompt for a valid, nonnegative Cassandra integer."""
@@ -21,7 +27,6 @@ def get_watch_count():
         except ValueError:
             print("Please enter a valid whole number.")
 
-
 def get_repo_name():
     """Prompt for a nonempty repository name."""
     while True:
@@ -30,9 +35,9 @@ def get_repo_name():
             return name
         print("Repository name cannot be empty.")
 
-
 def cassandra_menu():
-    """Run the interactive CRUD menu."""
+    """Run the interactive CRUD and analysis menu."""
+
     cluster = None
 
     try:
@@ -45,9 +50,12 @@ def cassandra_menu():
             print("2. Read repository")
             print("3. Update repository watch count")
             print("4. Delete repository")
-            print("5. Exit")
+            print("5. Top 10 repositories by watch count")
+            print("6. Repository name length analysis")
+            print("7. Watch count distribution (Coming Soon)")
+            print("8. Exit")
 
-            choice = input("Choose an option (1-5): ").strip()
+            choice = input("Choose an option (1-8): ").strip()
 
             try:
                 if choice == "1":
@@ -93,12 +101,24 @@ def cassandra_menu():
                     else:
                         print("Deletion cancelled.")
 
+                # Feature 1 - Repository popularity analysis
                 elif choice == "5":
+                    top_repositories(session)
+
+                # Feature 2 - Repository name analysis
+                elif choice == "6":
+                    repository_name_analysis(session)
+
+                # Reserved for Omari's Week 3 feature
+                elif choice == "7":
+                    print("Watch count distribution is coming soon.")
+
+                elif choice == "8":
                     print("Exiting Cassandra menu.")
                     break
 
                 else:
-                    print("Invalid option. Choose 1-5.")
+                    print("Invalid option. Choose 1-8.")
 
             except Exception as error:
                 print(f"Database operation failed: {error}")
@@ -109,7 +129,6 @@ def cassandra_menu():
     finally:
         if cluster is not None:
             cluster.shutdown()
-
 
 if __name__ == "__main__":
     cassandra_menu()
