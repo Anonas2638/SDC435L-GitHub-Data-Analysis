@@ -1,4 +1,3 @@
-
 # Name: Sherika Fayson
 # Course: SDC435L
 # Project: GitHub Data Analysis
@@ -6,6 +5,7 @@
 
 from redis_db.redis_menu import redis_menu
 from mongodb_db.mongo_menu import mongo_menu
+from cassandra_db.cassandra_menu import cassandra_menu
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
 
         print("1. Redis")
         print("2. MongoDB")
-        print("3. Cassandra (Coming Soon)")
+        print("3. Cassandra")
         print("4. Neo4j (Coming Soon)")
         print("5. SQLite (Coming Soon)")
         print("6. Exit")
@@ -33,7 +33,7 @@ def main():
             mongo_menu()
 
         elif choice == "3":
-            print("\nCassandra integration is coming in Week 3.")
+            cassandra_menu()
 
         elif choice == "4":
             print("\nNeo4j integration is coming in Week 4.")
