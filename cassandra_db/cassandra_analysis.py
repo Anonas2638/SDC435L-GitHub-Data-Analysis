@@ -7,6 +7,44 @@
 from cassandra_db.cassandra_connection import get_cassandra_connection
 from statistics import mean
 
+def watch_count_distribution_analysis(session):
+    rows = session.execute("SELECT watch_count FROM repositories")
+    counts = [row.watch_count for row in rows if row.watch_count is not None]
+
+    if not counts:
+        print("No watch count data found.")
+        return
+
+    buckets = {
+        "0": 0,
+        "1-10": 0,
+        "11-100": 0,
+        "101-1000": 0,
+        "1000+": 0,
+    }
+
+    for count in counts:
+        if count <= 0:
+            buckets["0"] += 1
+        elif count <= 10:
+            buckets["1-10"] += 1
+        elif count <= 100:
+            buckets["11-100"] += 1
+        elif count <= 1000:
+            buckets["101-1000"] += 1
+        else:
+            buckets["1000+"] += 1
+
+    total = len(counts)
+    print("\n===== Watch Count Distribution =====")
+    for label, amount in buckets.items():
+        pct = (amount / total) * 100
+        print(f"{label:>6} watchers: {amount} ({pct:.1f}%)")
+    print(f"Min: {min(counts):,} | Max: {max(counts):,} | Avg: {sum(counts) / total:.2f}")
+    print(f"Total repositories analyzed: {total}")
+
+
+
 def top_repositories(session):
     """Display the top 10 repositories by watch count."""
 
@@ -70,6 +108,8 @@ def main():
 
         top_repositories(session)
         repository_name_analysis(session)
+        watch_count_distribution_analysis(session)
+
 
     except Exception as error:
         print(f"Analysis failed: {error}")
@@ -80,3 +120,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+   
