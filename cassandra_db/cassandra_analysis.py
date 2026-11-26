@@ -17,23 +17,23 @@ def watch_count_distribution_analysis(session):
 
     buckets = {
         "0": 0,
-        "1-10": 0,
-        "11-100": 0,
+        "1-100": 0,
         "101-1000": 0,
-        "1000+": 0,
+        "1001-10000": 0,
+        "10000+": 0,
     }
 
     for count in counts:
         if count <= 0:
             buckets["0"] += 1
         elif count <= 10:
-            buckets["1-10"] += 1
+            buckets["1-100"] += 1
         elif count <= 100:
-            buckets["11-100"] += 1
-        elif count <= 1000:
             buckets["101-1000"] += 1
+        elif count <= 1000:
+            buckets["1001-1000"] += 1
         else:
-            buckets["1000+"] += 1
+            buckets["10000+"] += 1
 
     total = len(counts)
     print("\n===== Watch Count Distribution =====")
