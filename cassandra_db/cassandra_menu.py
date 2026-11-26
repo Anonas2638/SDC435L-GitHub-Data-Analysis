@@ -14,6 +14,7 @@ from cassandra_db.cassandra_crud import (
 from cassandra_db.cassandra_analysis import (
     top_repositories,
     repository_name_analysis,
+    watch_count_distribution_analysis
 )
 
 def get_watch_count():
@@ -111,7 +112,8 @@ def cassandra_menu():
 
                 # Reserved for Omari's Week 3 feature
                 elif choice == "7":
-                    print("Watch count distribution is coming soon.")
+                    watch_count_distribution_analysis(session)
+
 
                 elif choice == "8":
                     print("Exiting Cassandra menu.")
