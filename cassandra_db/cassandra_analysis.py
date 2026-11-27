@@ -1,4 +1,3 @@
-
 # Author: Anosha Naseri
 # Course: SDC435L
 # Week 3: Cassandra Data Analysis
@@ -6,6 +5,7 @@
 
 from cassandra_db.cassandra_connection import get_cassandra_connection
 from statistics import mean
+
 
 def watch_count_distribution_analysis(session):
     rows = session.execute("SELECT watch_count FROM repositories")
@@ -20,47 +20,41 @@ def watch_count_distribution_analysis(session):
         "1-100": 0,
         "101-1000": 0,
         "1001-10000": 0,
-        "10000+": 0,
+        "10001+": 0,
     }
 
+    # Assign each watch count to a non-overlapping range.
     for count in counts:
         if count <= 0:
             buckets["0"] += 1
-        elif count <= 10:
-            buckets["1-100"] += 1
         elif count <= 100:
-            buckets["101-1000"] += 1
+            buckets["1-100"] += 1
         elif count <= 1000:
-            buckets["1001-1000"] += 1
+            buckets["101-1000"] += 1
+        elif count <= 10000:
+            buckets["1001-10000"] += 1
         else:
-            buckets["10000+"] += 1
+            buckets["10001+"] += 1
 
     total = len(counts)
     print("\n===== Watch Count Distribution =====")
     for label, amount in buckets.items():
         pct = (amount / total) * 100
         print(f"{label:>6} watchers: {amount} ({pct:.1f}%)")
-    print(f"Min: {min(counts):,} | Max: {max(counts):,} | Avg: {sum(counts) / total:.2f}")
+    print(
+        f"Min: {min(counts):,} | Max: {max(counts):,} | Avg: {sum(counts) / total:.2f}"
+    )
     print(f"Total repositories analyzed: {total}")
-
 
 
 def top_repositories(session):
     """Display the top 10 repositories by watch count."""
 
-    rows = session.execute(
-        "SELECT repo_name, watch_count FROM repositories"
-    )
+    rows = session.execute("SELECT repo_name, watch_count FROM repositories")
 
-    repositories = [
-        row for row in rows if row.watch_count is not None
-    ]
+    repositories = [row for row in rows if row.watch_count is not None]
 
-    ranked = sorted(
-        repositories,
-        key=lambda row: row.watch_count,
-        reverse=True
-    )[:10]
+    ranked = sorted(repositories, key=lambda row: row.watch_count, reverse=True)[:10]
 
     print("\n===== Top 10 Repositories by Watch Count =====")
 
@@ -69,12 +63,11 @@ def top_repositories(session):
 
     print(f"\nTotal repositories analyzed: {len(repositories)}")
 
+
 def repository_name_analysis(session):
     """Analyze repository name lengths."""
 
-    rows = session.execute(
-        "SELECT repo_name FROM repositories"
-    )
+    rows = session.execute("SELECT repo_name FROM repositories")
 
     names = [row.repo_name for row in rows if row.repo_name]
 
@@ -96,8 +89,9 @@ def repository_name_analysis(session):
     print(f"\nAverage name length: {average:.2f} characters")
     print(f"Total repositories analyzed: {len(names)}")
 
+
 def main():
-    """Connect to Cassandra and test both analysis features."""
+    """Connect to Cassandra and test all three analysis features."""
 
     cluster = None
 
@@ -110,7 +104,6 @@ def main():
         repository_name_analysis(session)
         watch_count_distribution_analysis(session)
 
-
     except Exception as error:
         print(f"Analysis failed: {error}")
 
@@ -118,6 +111,6 @@ def main():
         if cluster is not None:
             cluster.shutdown()
 
+
 if __name__ == "__main__":
     main()
-   
