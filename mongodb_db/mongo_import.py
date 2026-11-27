@@ -4,15 +4,19 @@
 # Week 2: MongoDB Integration
 # Purpose: Import GitHub Archive repository data into MongoDB.
 
-import json
 from pathlib import Path
+
+import orjson
+
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import PyMongoError
 
+from input_validation import validate_repository_name, parse_watch_count
 from mongodb_db.mongo_connection import (
     get_connection,
     get_collection
 )
+from mongodb_db.mongo_crud import validate_mongo_watch_count
 
 DATASET_PATH = (
     Path(__file__).resolve().parent.parent / "Sample_Repos.json"
@@ -51,14 +55,11 @@ def import_repositories(collection, limit=IMPORT_LIMIT):
             processed += 1
 
             try:
-                record = json.loads(line)
+                # Decode each JSON Lines record independently to keep memory use low.
+                record = orjson.loads(line)
 
-                repo_name = record["repo_name"].strip()
-                watch_count = int(record["watch_count"])
-
-                if not repo_name or watch_count < 0:
-                    skipped += 1
-                    continue
+                repo_name = validate_repository_name(record.get("repo_name"))
+                watch_count = validate_mongo_watch_count(parse_watch_count(record.get("watch_count")))
 
                 record["repo_name"] = repo_name
                 record["watch_count"] = watch_count
@@ -75,8 +76,13 @@ def import_repositories(collection, limit=IMPORT_LIMIT):
                 else:
                     existing += 1
 
-            except (json.JSONDecodeError, KeyError, ValueError,
-                    TypeError, AttributeError):
+            except (
+                orjson.JSONDecodeError,
+                KeyError,
+                ValueError,
+                TypeError,
+                AttributeError,
+            ):
                 skipped += 1
 
     print("\nMONGODB IMPORT RESULTS")

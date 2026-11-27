@@ -6,20 +6,29 @@
 
 from pymongo.errors import PyMongoError, DuplicateKeyError
 
+from input_validation import validate_repository_name, validate_watch_count, parse_watch_count
 from mongodb_db.mongo_connection import (
     get_connection,
     get_collection
 )
 
+def validate_mongo_watch_count(watch_count):
+    """Validate a watch count against MongoDB's BSON integer limits."""
+    count = validate_watch_count(watch_count)
+
+    if count > 9223372036854775807:
+        raise ValueError(
+            "Watch count cannot exceed 9223372036854775807."
+        )
+
+    return count
 
 # CREATE
 def create_repository(collection, repo_name, watch_count):
     """Insert a new repository document."""
 
-    repo_name = repo_name.strip()
-
-    if not repo_name or watch_count < 0:
-        raise ValueError("Invalid repository name or watch count.")
+    repo_name = validate_repository_name(repo_name)
+    watch_count = validate_mongo_watch_count(watch_count)
 
     document = {
         "repo_name": repo_name,
@@ -39,7 +48,7 @@ def read_repository(collection, repo_name):
     """Retrieve a repository by its name."""
 
     return collection.find_one(
-        {"repo_name": repo_name.strip()}
+        {"repo_name": validate_repository_name(repo_name)}
     )
 
 
@@ -47,11 +56,11 @@ def read_repository(collection, repo_name):
 def update_repository(collection, repo_name, watch_count):
     """Update the watch count of an existing repository."""
 
-    if watch_count < 0:
-        raise ValueError("Watch count cannot be negative.")
+    repo_name = validate_repository_name(repo_name)
+    watch_count = validate_mongo_watch_count(watch_count)
 
     result = collection.update_one(
-        {"repo_name": repo_name.strip()},
+        {"repo_name": repo_name},
         {"$set": {"watch_count": watch_count}}
     )
 
@@ -63,7 +72,7 @@ def delete_repository(collection, repo_name):
     """Delete an existing repository document."""
 
     result = collection.delete_one(
-        {"repo_name": repo_name.strip()}
+        {"repo_name": validate_repository_name(repo_name)}
     )
 
     return result.deleted_count > 0
@@ -73,23 +82,15 @@ def delete_repository(collection, repo_name):
 def get_repository_name():
     """Prompt the user for a valid repository name."""
 
-    repo_name = input("Enter repository name: ").strip()
-
-    if not repo_name:
-        raise ValueError("Repository name cannot be empty.")
-
-    return repo_name
+    return validate_repository_name(
+        input("Enter repository name (owner/repository): ")
+    )
 
 
 def get_watch_count():
     """Prompt the user for a nonnegative watch count."""
 
-    watch_count = int(input("Enter watch count: "))
-
-    if watch_count < 0:
-        raise ValueError("Watch count cannot be negative.")
-
-    return watch_count
+    return validate_mongo_watch_count(parse_watch_count(input("Enter watch count: ").strip()))
 
 
 # INTERACTIVE CRUD MENU

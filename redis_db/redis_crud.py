@@ -1,6 +1,13 @@
 
 import json
+import orjson
 import redis
+
+from input_validation import (
+    validate_repository_name,
+    validate_watch_count,
+    parse_watch_count,
+)
 
 # Establish a connection to the Redis database.
 connection = redis.Redis(
@@ -14,10 +21,8 @@ PREFIX = "github:repo:"
 
 def create_repository(repo_name, watch_count):
     """Create a new repository without overwriting existing data."""
-    repo_name = repo_name.strip()
-
-    if not repo_name or watch_count < 0:
-        return False
+    repo_name = validate_repository_name(repo_name)
+    watch_count = validate_watch_count(watch_count)
 
     key = PREFIX + repo_name
 
@@ -33,20 +38,22 @@ def create_repository(repo_name, watch_count):
 
 def read_repository(repo_name):
     """Retrieve a repository from Redis."""
-    key = PREFIX + repo_name
+    key = PREFIX + validate_repository_name(repo_name)
     data = connection.get(key)
 
     if data is None:
         return None
 
-    return json.loads(data)
+    return orjson.loads(data)
 
 
 def update_repository(repo_name, watch_count):
     """Update the watch count of an existing repository."""
+    repo_name = validate_repository_name(repo_name)
+    watch_count = validate_watch_count(watch_count)
     repository = read_repository(repo_name)
 
-    if repository is None or watch_count < 0:
+    if repository is None:
         return False
 
     repository["watch_count"] = str(watch_count)
@@ -60,7 +67,7 @@ def update_repository(repo_name, watch_count):
 
 def delete_repository(repo_name):
     """Delete a repository from Redis."""
-    key = PREFIX + repo_name
+    key = PREFIX + validate_repository_name(repo_name)
 
     return connection.delete(key) > 0
 
@@ -80,8 +87,10 @@ def crud_menu():
 
         try:
             if choice == "1":
-                name = input("Repository name (owner/repo): ").strip()
-                count = int(input("Watch count: "))
+                name = validate_repository_name(
+                    input("Repository name (owner/repo): ")
+                )
+                count = parse_watch_count(input("Watch count: "))
 
                 if create_repository(name, count):
                     print("Repository created successfully.")
@@ -89,7 +98,9 @@ def crud_menu():
                     print("Invalid input or repository already exists.")
 
             elif choice == "2":
-                name = input("Repository name: ").strip()
+                name = validate_repository_name(
+                    input("Repository name (owner/repo): ")
+                )
                 repository = read_repository(name)
 
                 if repository is not None:
@@ -98,8 +109,10 @@ def crud_menu():
                     print("Repository not found.")
 
             elif choice == "3":
-                name = input("Repository name: ").strip()
-                count = int(input("New watch count: "))
+                name = validate_repository_name(
+                    input("Repository name (owner/repo): ")
+                )
+                count = parse_watch_count(input("New watch count: "))
 
                 if update_repository(name, count):
                     print("Repository updated successfully.")
@@ -107,7 +120,9 @@ def crud_menu():
                     print("Repository not found or invalid watch count.")
 
             elif choice == "4":
-                name = input("Repository name: ").strip()
+                name = validate_repository_name(
+                    input("Repository name (owner/repo): ")
+                )
                 confirm = input("Confirm deletion (y/n): ").lower()
 
                 if confirm == "y":
@@ -124,8 +139,8 @@ def crud_menu():
             else:
                 print("Invalid selection. Please try again.")
 
-        except ValueError:
-            print("Watch count must be a valid integer.")
+        except ValueError as error:
+            print(f"Invalid input: {error}")
 
         except redis.RedisError as error:
             print(f"Redis error: {error}")

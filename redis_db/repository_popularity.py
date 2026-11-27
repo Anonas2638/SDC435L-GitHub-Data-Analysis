@@ -1,5 +1,5 @@
 
-import json
+import orjson
 import redis
 
 def show_popular_repositories(repositories):
@@ -36,7 +36,7 @@ def get_repositories_from_redis():
     for key in connection.scan_iter(match="github:repo:*"):
         data = connection.get(key)
         if data:
-            repositories.append(json.loads(data))
+            repositories.append(orjson.loads(data))
 
     return repositories
 

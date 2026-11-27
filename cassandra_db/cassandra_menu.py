@@ -9,6 +9,7 @@ from cassandra_db.cassandra_crud import (
     update_repository,
     delete_repository,
 )
+from input_validation import validate_repository_name, validate_watch_count
 
 # Week 3 analysis features - Anosha Naseri
 from cassandra_db.cassandra_analysis import (
@@ -21,7 +22,7 @@ def get_watch_count():
     """Prompt for a valid, nonnegative Cassandra integer."""
     while True:
         try:
-            count = int(input("Enter watch count: ").strip())
+            count = validate_watch_count(int(input("Enter watch count: ").strip()))
             if 0 <= count <= 2147483647:
                 return count
             print("Enter a number between 0 and 2147483647.")
@@ -29,12 +30,14 @@ def get_watch_count():
             print("Please enter a valid whole number.")
 
 def get_repo_name():
-    """Prompt for a nonempty repository name."""
+    """Prompt for a repository name in owner/repository format."""
     while True:
-        name = input("Enter repository name: ").strip()
-        if name:
-            return name
-        print("Repository name cannot be empty.")
+        try:
+            return validate_repository_name(
+                input("Enter repository name (owner/repository): ")
+            )
+        except ValueError as error:
+            print(error)
 
 def cassandra_menu():
     """Run the interactive CRUD and analysis menu."""

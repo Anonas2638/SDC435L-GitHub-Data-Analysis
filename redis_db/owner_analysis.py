@@ -1,7 +1,8 @@
 
-import json
-import redis
 from collections import Counter
+
+import orjson
+import redis
 
 # Connect to the Redis database.
 connection = redis.Redis(
@@ -23,7 +24,7 @@ def owner_analysis(limit=10):
         if data is None:
             continue
 
-        repository = json.loads(data)
+        repository = orjson.loads(data)
         repo_name = repository.get("repo_name", "")
 
         # Extract the owner from the repository name.

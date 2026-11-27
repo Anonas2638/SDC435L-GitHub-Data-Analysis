@@ -1,9 +1,13 @@
 """Import GitHub Archive repository data into Cassandra."""
 
-import json
 from pathlib import Path
 
+import orjson
+
 from cassandra_db.cassandra_connection import get_cassandra_connection
+from input_validation import validate_repository_name, parse_watch_count
+from cassandra_db.cassandra_crud import validate_cassandra_watch_count
+
 
 DATA_FILE = Path(__file__).resolve().parent.parent / "Sample_Repos.json"
 MAX_RECORDS = 1000
@@ -22,24 +26,18 @@ def load_repositories():
                 continue
 
             try:
-                record = json.loads(line)
-                repo_name = record.get("repo_name")
-                watch_count = int(record.get("watch_count"))
-
-                if not isinstance(repo_name, str) or not repo_name.strip():
-                    raise ValueError("Invalid repository name")
-
-                if watch_count < 0:
-                    raise ValueError("Watch count cannot be negative")
-
-                repositories.append(
-                    (repo_name.strip(), watch_count)
+                # Read JSON Lines incrementally instead of decoding the full file.
+                record = orjson.loads(line)
+                repo_name = validate_repository_name(record.get("repo_name"))
+                watch_count = validate_cassandra_watch_count(
+                    parse_watch_count(record.get("watch_count"))
                 )
+                repositories.append((repo_name, watch_count))
 
                 if len(repositories) >= MAX_RECORDS:
                     break
 
-            except (ValueError, TypeError, AttributeError, json.JSONDecodeError):
+            except (ValueError, TypeError, AttributeError):
                 print(f"Skipping invalid record on line {line_number}")
 
     return repositories
