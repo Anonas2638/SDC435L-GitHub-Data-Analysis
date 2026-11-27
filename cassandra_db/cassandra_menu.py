@@ -53,7 +53,7 @@ def cassandra_menu():
             print("4. Delete repository")
             print("5. Top 10 repositories by watch count")
             print("6. Repository name length analysis")
-            print("7. Watch count distribution (Coming Soon)")
+            print("7. Watch count distribution")
             print("8. Exit")
 
             choice = input("Choose an option (1-8): ").strip()
@@ -110,7 +110,7 @@ def cassandra_menu():
                 elif choice == "6":
                     repository_name_analysis(session)
 
-                # Reserved for Omari's Week 3 feature
+                # Display repository distribution across watch count ranges.
                 elif choice == "7":
                     watch_count_distribution_analysis(session)
 
