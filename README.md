@@ -16,17 +16,26 @@ The application provides a centralized entry point through
 `main.py`, with separate modules for database connectivity,
 dataset imports, CRUD operations, and repository data analysis.
 
-Weeks 1, 2, and 3 are implemented. Neo4j and SQLite remain
-scheduled for future development.
+Weeks 1, 2, and 3 have been implemented, tested, and submitted.
+
+Week 4 introduces Neo4j graph database integration. Database
+connectivity, graph schema initialization, dataset importing,
+and repository owner relationship analysis have been implemented
+and tested locally.
+
+Additional Neo4j analysis features, CRUD operations, and central
+menu integration remain in progress.
+
+SQLite integration is scheduled for Week 5.
 
 ## Development Status
 
 | Week | Database | Status |
-| ------ | ---------- | -------- |
+| --- | --- | --- |
 | 1 | Redis | Complete and submitted |
 | 2 | MongoDB | Complete and submitted |
-| 3 | Cassandra | Implemented and tested |
-| 4 | Neo4j | Planned |
+| 3 | Cassandra | Complete and submitted |
+| 4 | Neo4j | In progress - core infrastructure and Feature 2 tested |
 | 5 | SQLite | Planned |
 
 ---
@@ -197,6 +206,181 @@ the updated application in either environment.
 
 ---
 
+## Week 4: Neo4j Integration
+
+Week 4 introduces Neo4j, a graph database used to model and
+analyze relationships between GitHub repository owners and
+their repositories.
+
+Unlike the previous database implementations, Neo4j represents
+data using nodes, relationships, and properties. Cypher queries
+allow the application to analyze connected data directly.
+
+### Neo4j Database Configuration
+
+| Configuration | Value |
+| --- | --- |
+| Database | Neo4j Community Edition |
+| Server Version | 5.26.33 |
+| Python Driver | neo4j 5.28.2 |
+| Database Name | neo4j |
+| Bolt URI | bolt://localhost:7687 |
+| Browser URL | <http://localhost:7474> |
+| Import Record Limit | 1,000 |
+| Import Batch Size | 100 |
+
+Database credentials are configured through environment
+variables rather than hardcoded into the application.
+
+### Graph Database Design
+
+The graph consists of two node labels and one relationship type.
+
+#### Owner Node
+
+- Label: `Owner`
+- Property: `name`
+- Unique identifier: `name`
+
+#### Repository Node
+
+- Label: `Repository`
+- Property: `repo_name`
+- Property: `watch_count`
+- Unique identifier: `repo_name`
+
+#### Ownership Relationship
+
+- Type: `OWNS`
+- Direction: Owner to Repository
+- Cardinality: One-to-many
+
+```mermaid
+graph LR
+    O["Owner: google"] -->|OWNS| R1["Repository: google/repo1"]
+    O -->|OWNS| R2["Repository: google/repo2"]
+    O -->|OWNS| R3["Repository: google/repo3"]
+```
+
+The intended graph model assigns each repository to one owner, while
+an owner may own multiple repositories. The diagram uses illustrative
+repository names. Ownership cardinality is maintained by application
+logic rather than the uniqueness constraints alone.
+
+The following uniqueness constraints prevent duplicate
+owner and repository identifiers:
+
+- `owner_name_unique`
+- `repository_name_unique`
+
+### Connection and Schema Initialization
+
+The `neo4j_connection.py` module provides a reusable database
+driver configured through environment variables.
+
+The connection module:
+
+- Requires a database password through an environment variable.
+- Verifies connectivity before returning the driver.
+- Releases driver resources if connectivity verification fails.
+- Supports configurable connection and database settings.
+
+The `neo4j_schema.py` module initializes uniqueness constraints
+using `CREATE CONSTRAINT IF NOT EXISTS`, allowing schema
+initialization to be repeated safely.
+
+### Neo4j Data Import
+
+The `neo4j_import.py` module imports repository records from
+`Sample_Repos.json` into Neo4j.
+
+The import process:
+
+- Uses `orjson` for optimized JSON decoding.
+- Reuses the shared repository name and watch count validators.
+- Extracts owner names from repository identifiers.
+- Converts numeric watch count strings into integers.
+- Rejects watch counts exceeding Neo4j's signed 64-bit
+  integer limit.
+- Processes up to 1,000 valid records.
+- Writes records in batches of 100 using parameterized
+  Cypher queries.
+- Uses `MERGE` to prevent duplicate nodes and ownership
+  relationships during repeated imports.
+- Uses `ON CREATE SET` to preserve existing repository
+  watch counts.
+- Reports valid records, invalid records, newly created
+  nodes, and newly created relationships.
+
+### Neo4j Implemented Features
+
+| Feature | Module | Status |
+| --- | --- | --- |
+| Database connection | neo4j_connection.py | Complete |
+| Graph schema initialization | neo4j_schema.py | Complete |
+| JSON dataset import | neo4j_import.py | Complete |
+| Feature 2: Repository Owner Relationship Analysis | owner_analysis.py | Complete |
+| CRUD operations | Pending integration | In Progress |
+| Feature 1: Top repositories by watch count | Pending integration | In Progress |
+| Feature 3: Related repository analysis | Pending integration | In Progress |
+| Interactive menu integration | Pending integration | In Progress |
+
+### Feature 2: Repository Owner Relationship Analysis
+
+The `owner_analysis.py` module uses Cypher queries to analyze
+ownership relationships between repository owners and their
+repositories.
+
+The analysis provides three categories of results:
+
+#### Ownership Overview
+
+- Total connected owners.
+- Total connected repositories.
+- Total ownership relationships.
+
+#### Top 10 Repository Owners
+
+- Owner ranking by repository count.
+- Number of repositories per owner.
+- Combined repository watch counts.
+- Average watch count per repository.
+- Deterministic ordering for owners with equal repository counts.
+
+#### Ownership Distribution
+
+- Number and percentage of single-repository owners.
+- Number and percentage of multiple-repository owners.
+- Average repositories per owner.
+- Maximum repositories owned by a single owner.
+
+The analysis separates database queries from output formatting
+to improve maintainability and automated testability.
+
+Results represent the imported dataset rather than the entire
+GitHub platform. Owners without connected repositories are
+excluded from the ownership analysis.
+
+### Development Environment
+
+The Neo4j connection, schema initialization, dataset import,
+and repository owner analysis were developed and tested
+locally using:
+
+- macOS on Apple Silicon.
+- Python 3.13.15.
+- Docker Desktop.
+- Neo4j Community Edition 5.26.33.
+- Neo4j Python driver 5.28.2.
+- Visual Studio Code.
+
+Installation compatibility for the Neo4j Python driver was
+checked using a Python 3.8.10 dependency installation
+simulation.
+
+Full VCASTLE runtime compatibility and team integration
+testing remain pending.
+
 ## Project Structure
 
 ```text
@@ -231,6 +415,14 @@ SDC435L-GitHub-Data-Analysis/
 │   ├── cassandra_menu.py
 │   ├── test_cassandra_analysis.py
 │   └── test_cassandra_crud.py
+├── neo4j_db/
+│   ├── __init__.py
+│   ├── neo4j_connection.py
+│   ├── neo4j_schema.py
+│   ├── neo4j_import.py
+│   ├── owner_analysis.py
+│   ├── test_neo4j_import.py
+│   └── test_owner_analysis.py
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
@@ -239,6 +431,9 @@ SDC435L-GitHub-Data-Analysis/
 
 The dataset is provided through the course and is not
 tracked in Git.
+
+Local environment files, virtual environments, and Python
+cache directories are excluded through `.gitignore`.
 
 ---
 
@@ -249,8 +444,9 @@ tracked in Git.
 - Redis server
 - MongoDB Community Server
 - Apache Cassandra
-- Docker Desktop for containerized Cassandra deployment
-  on macOS
+- Neo4j Community Edition (5.26 tested locally)
+- Docker Desktop for local containerized deployments on macOS
+  (not required when database servers are already installed in VCASTLE)
 - GitHub Archive `Sample_Repos.json` dataset
 
 ### Python Dependencies
@@ -262,6 +458,7 @@ redis==6.1.1
 pymongo==4.10.1
 cassandra-driver==3.29.3
 orjson>=3.10.7,<4
+neo4j==5.28.2
 ```
 
 ---
@@ -407,7 +604,128 @@ cqlsh
 
 Use the same keyspace and table configuration.
 
-### 6. Add the Dataset
+### 6. Start Neo4j
+
+#### Local Docker deployment
+
+For local development using Docker Desktop, enter a password in
+macOS zsh without displaying it:
+
+```bash
+read -s "NEO4J_PASSWORD?Enter Neo4j password: "
+export NEO4J_PASSWORD
+```
+
+For Bash on Linux, use `read -rsp "Enter Neo4j password: " NEO4J_PASSWORD`
+followed by `export NEO4J_PASSWORD` instead.
+
+Use a password of at least eight characters. Create the container:
+
+```bash
+docker run -d \
+  --name neo4j-week4 \
+  -p 127.0.0.1:7474:7474 \
+  -p 127.0.0.1:7687:7687 \
+  -e "NEO4J_AUTH=neo4j/$NEO4J_PASSWORD" \
+  -v neo4j-week4-data:/data \
+  neo4j:5.26
+```
+
+If the container already exists, use `docker start neo4j-week4`
+instead and enter its existing password. Wait for initialization:
+
+```bash
+docker logs neo4j-week4
+```
+
+Open <http://localhost:7474> and sign in using the username `neo4j`
+and the configured password.
+
+#### ECPI VCASTLE (Ubuntu Linux)
+
+If Neo4j is already installed in VCASTLE, use that installation
+instead of creating a Docker container. Follow the course guided
+practice for the installed version and configuration.
+
+Check the installed version:
+
+```bash
+neo4j --version
+```
+
+For a systemd-managed installation, check the service status:
+
+```bash
+systemctl status neo4j
+```
+
+If the service is stopped and you have permission to start it:
+
+```bash
+sudo systemctl start neo4j
+```
+
+For a standalone installation, use the appropriate installation
+path and startup command, such as `neo4j start`. Use only the
+startup method appropriate to your installation. If Neo4j is not
+installed or permissions are restricted, follow the course guided
+practice or contact the instructor.
+
+Open <http://localhost:7474> in the VCASTLE browser if the local
+HTTP connector is enabled. Use the configured database credentials.
+
+From the project root, activate the virtual environment and install
+the dependencies if not already completed in Step 2:
+
+```bash
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+Configure the connection in the Ubuntu Bash terminal:
+
+```bash
+export NEO4J_URI="bolt://localhost:7687"
+export NEO4J_USER="neo4j"
+export NEO4J_DATABASE="neo4j"
+read -r -s -p "Enter Neo4j password: " NEO4J_PASSWORD
+echo
+export NEO4J_PASSWORD
+```
+
+Adjust the URI, username and database name if the VCASTLE
+installation uses different settings. Enter the existing database
+password, not a new password for an already configured server.
+
+The Neo4j driver installation was checked using a Python 3.8.10
+simulation. Full VCASTLE runtime compatibility, server version,
+and installation permissions remain to be verified. The complete
+requirements installation also depends on the other database drivers.
+
+#### Shared connection settings and verification
+
+Both Docker and VCASTLE users use the same Python modules and
+connection settings.
+
+| Environment variable | Default |
+| --- | --- |
+| `NEO4J_URI` | `bolt://localhost:7687` |
+| `NEO4J_USER` | `neo4j` |
+| `NEO4J_DATABASE` | `neo4j` |
+| `NEO4J_PASSWORD` | Required; no default |
+
+Export the password again in each new terminal session. Never commit
+credentials or include them in screenshots. The Docker configuration
+is intended for local development, not production secret management.
+
+Verify connectivity and initialize the graph constraints:
+
+```bash
+python -m neo4j_db.neo4j_connection
+python -m neo4j_db.neo4j_schema
+```
+
+### 7. Add the Dataset
 
 Download and extract `Sample_Repos.json` from the SDC435L
 Canvas course.
@@ -441,7 +759,7 @@ python main.py
 
 Select the database you want to use.
 
-Each implemented database provides access to repository
+Each database currently integrated into the main menu provides access to repository
 imports, CRUD operations, analysis features, and navigation
 back to the main menu.
 
@@ -480,19 +798,35 @@ python -m cassandra_db.test_cassandra_crud
 Cassandra analysis features are accessible through option 3
 of the main application menu.
 
+#### Neo4j
+
+With Neo4j running and the password exported, run:
+
+```bash
+python -m neo4j_db.neo4j_connection
+python -m neo4j_db.neo4j_schema
+python -m neo4j_db.neo4j_import
+python -m neo4j_db.owner_analysis
+```
+
+The importer also initializes constraints automatically. Neo4j modules
+currently run independently while main menu integration is pending.
+The owner analysis entry point for future menu integration is
+`neo4j_db.owner_analysis.analyze_repository_owners`.
+
 ---
 
 ## Database Model Comparison
 
-| Attribute | Redis | MongoDB | Cassandra |
-| ----------- | ------- | --------- | ----------- |
-| Database model | Key-value | Document | Wide-column |
-| Record representation | JSON string | BSON document | CQL row |
-| Repository identifier | Redis key | Unique repo_name field | Primary key |
-| Watch count type | String | Integer | 32-bit integer |
-| Query approach | Redis commands | MongoDB queries | CQL |
-| Analysis approach | Python iteration | Aggregation queries | CQL + Python |
-| Duplicate prevention | SET NX | Unique index/upsert | INSERT IF NOT EXISTS |
+| Attribute | Redis | MongoDB | Cassandra | Neo4j |
+| --- | --- | --- | --- | --- |
+| Database model | Key-value | Document | Wide-column | Graph |
+| Record representation | JSON string | BSON document | CQL row | Nodes and relationships |
+| Repository identifier | Redis key | Unique repo_name field | Primary key | Unique Repository.repo_name |
+| Watch count type | String | Integer | 32-bit integer | 64-bit integer |
+| Query approach | Redis commands | MongoDB queries | CQL | Cypher |
+| Analysis approach | Python iteration | Aggregation queries | CQL + Python | Graph pattern matching and aggregation |
+| Duplicate prevention | SET NX | Unique index/upsert | INSERT IF NOT EXISTS | Uniqueness constraints and MERGE |
 
 ### Example Dataset Record
 
@@ -511,6 +845,11 @@ generates an `_id` field.
 Cassandra stores the repository name as a TEXT primary key
 and the watch count as an INT column.
 
+Neo4j represents the example as an Owner node named `FreeCodeCamp`
+connected by an `OWNS` relationship to a Repository node with
+`repo_name` set to `FreeCodeCamp/FreeCodeCamp` and integer
+`watch_count` set to 90457.
+
 ---
 
 ## Code Quality and Performance Improvements
@@ -522,7 +861,7 @@ maintainability, and data integrity.
 ### Shared Input Validation
 
 The `input_validation.py` module centralizes reusable
-validation logic across Redis, MongoDB, and Cassandra.
+validation logic across Redis, MongoDB, Cassandra, and the Neo4j importer.
 
 The module:
 
@@ -541,6 +880,7 @@ Database-specific validation also enforces storage limits.
 | Redis | No database-specific integer limit |
 | MongoDB | 9,223,372,036,854,775,807 |
 | Cassandra | 2,147,483,647 |
+| Neo4j (importer) | 9,223,372,036,854,775,807 |
 
 The repository name validation rules are application-specific
 and are not intended to implement every GitHub naming rule.
@@ -558,6 +898,8 @@ and are not intended to implement every GitHub naming rule.
 - Redis uses conditional insertion with `nx=True`.
 - MongoDB uses `$setOnInsert` with upsert.
 - Cassandra uses `INSERT IF NOT EXISTS`.
+- Neo4j uses uniqueness constraints, `MERGE`, and `ON CREATE SET`
+  to preserve existing watch counts during repeated imports.
 - Invalid dataset records are skipped during imports.
 - Existing Redis JSON storage compatibility is maintained.
 - Repeated imports preserve existing repository records.
@@ -618,22 +960,38 @@ Automated tests cover:
 - Existing Redis JSON compatibility.
 - Redis conditional import behavior.
 - Cassandra watch count distribution.
+- Neo4j importer validation, malformed JSON, integer boundaries,
+  empty datasets, valid-record limits, and parameterized batch writes.
+- Neo4j owner analysis queries, parameterized ranking limits,
+  percentage calculations, empty results, and output formatting.
 
 Run the automated test suite from the project root:
 
 ```bash
-python -m unittest test_input_validation cassandra_db.test_cassandra_analysis -v
+python -m unittest test_input_validation cassandra_db.test_cassandra_analysis neo4j_db.test_owner_analysis neo4j_db.test_neo4j_import -v
 ```
 
 Latest local result:
 
 ```text
-Ran 17 tests in 0.006s
+Ran 39 tests in 0.014s
 
 OK
 ```
 
-**17 of 17 automated tests passed.**
+**39 of 39 automated tests passed.**
+
+| Test suite | Passed |
+| --- | ---: |
+| Shared input validation | 13 |
+| Cassandra distribution | 4 |
+| Neo4j owner analysis | 7 |
+| Neo4j importer | 15 |
+| Total | 39 |
+
+These selected unit tests include mocked database operations and do
+not replace live database integration testing. Local dependency checks
+reported no broken requirements, and Python compilation succeeded.
 
 ### Cassandra Live CRUD Testing
 
@@ -665,6 +1023,37 @@ Repeated imports were tested using the existing
 
 Redis and MongoDB also reported zero invalid records
 during their repeated import tests.
+
+### Neo4j Live Import and Graph Verification
+
+| Metric | Initial import | Repeated import |
+| --- | ---: | ---: |
+| Valid records processed | 1,000 | 1,000 |
+| Invalid records skipped | 0 | 0 |
+| New nodes created | 1,828 | 0 |
+| New OWNS relationships | 1,000 | 0 |
+
+A live preservation test temporarily changed the watch count of
+`FreeCodeCamp/FreeCodeCamp` to 99999, repeated the import, verified
+that the changed value remained, and restored the original 90457.
+
+Read-only Cypher integrity checks returned zero for each of the
+following conditions:
+
+- Repositories without owners.
+- Owners without repositories.
+- Repositories with other than one incoming OWNS relationship.
+- Owner names inconsistent with repository identifiers.
+- Missing, non-integer, or negative watch counts.
+
+The owner analysis results were independently checked against the
+first 1,000 dataset records using Python's standard JSON library.
+All ownership totals and top-ten owner statistics matched.
+
+Neo4j CRUD, other analysis features, menu integration, and VCASTLE
+runtime testing remain pending. The uniqueness constraints alone do
+not enforce ownership cardinality; application logic and integrity
+checks are required.
 
 ### Manual Regression Testing
 
@@ -815,6 +1204,38 @@ MongoDB and Cassandra use different distribution ranges.
 Their individual bucket counts are therefore not directly
 comparable.
 
+### Neo4j Repository Owner Relationship Analysis
+
+| Metric | Result |
+| --- | ---: |
+| Connected owners | 828 |
+| Connected repositories | 1,000 |
+| OWNS relationships | 1,000 |
+| Single-repository owners | 745 (89.98%) |
+| Multiple-repository owners | 83 (10.02%) |
+| Average repositories per owner | 1.21 |
+| Maximum repositories per owner | 22 |
+
+| Rank | Owner | Repositories | Total watches | Average watches |
+| --- | --- | ---: | ---: | ---: |
+| 1 | google | 22 | 56,092 | 2,549.64 |
+| 2 | facebook | 19 | 56,208 | 2,958.32 |
+| 3 | Ramotion | 8 | 12,835 | 1,604.38 |
+| 4 | gaearon | 7 | 10,829 | 1,547.00 |
+| 5 | reactjs | 7 | 15,302 | 2,186.00 |
+| 6 | Microsoft | 6 | 25,074 | 4,179.00 |
+| 7 | angular | 6 | 18,167 | 3,027.83 |
+| 8 | github | 5 | 14,304 | 2,860.80 |
+| 9 | sindresorhus | 5 | 20,582 | 4,116.40 |
+| 10 | airbnb | 4 | 20,704 | 5,176.00 |
+
+Google has the most repositories in the sample. Facebook has a
+slightly higher combined watch count than Google. Airbnb has the
+highest average watch count among these ten owners.
+
+Owner repository counts match the Redis analysis; tie ordering may
+differ because Neo4j sorts tied owners by case-sensitive name.
+
 Sample analysis results depend on the imported dataset.
 
 ---
@@ -894,6 +1315,20 @@ Sample analysis results depend on the imported dataset.
 - Performed cross-database regression testing.
 - Conducted a 400,000-record JSON decoding benchmark.
 
+#### Week 4: Sherika Fayson
+
+- Configured Neo4j locally using Docker and persistent storage.
+- Implemented reusable, environment-configured database connectivity.
+- Designed Owner and Repository nodes and OWNS relationships.
+- Implemented repeatable graph uniqueness constraints.
+- Developed a validated, batched, non-destructive JSON importer.
+- Implemented Feature 2: Repository Owner Relationship Analysis.
+- Added 15 importer tests and 7 owner analysis tests.
+- Verified graph integrity, repeated imports, and watch count preservation.
+- Independently validated analysis results against the source dataset.
+- Verified 39 passing cumulative unit tests and local dependencies.
+- Updated Neo4j documentation and execution instructions.
+
 ### Omari Johnson
 
 #### Week 2 — Omari Johnson
@@ -914,8 +1349,11 @@ tested by Sherika Fayson.
 
 ### Week 4: Neo4j
 
-Planned implementation of a graph database integration
-following the existing modular architecture.
+Core Neo4j infrastructure and Feature 2 are implemented and tested
+locally. Remaining team work includes CRUD operations, Feature 1
+(top repositories by watch count), Feature 3 (related repository
+analysis), interactive menu integration, VCASTLE compatibility testing,
+and final group integration and submission.
 
 ### Week 5: SQLite
 
