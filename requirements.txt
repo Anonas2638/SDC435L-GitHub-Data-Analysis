@@ -2,3 +2,4 @@ redis==6.1.1
 pymongo==4.10.1
 cassandra-driver==3.29.3
 orjson>=3.10.7,<4
+neo4j==5.28.2
